@@ -1,0 +1,303 @@
+---
+title: "TP_THOMAS_02_quali"
+author: "Thomas Broine"
+date: "2024-04-09"
+output: pdf_document
+---
+
+```{r setup, echo = FALSE}
+library("forcats")
+library("ggplot2")
+library("ggthemes")
+library(ggforce)
+library(palmerpenguins)
+library(readxl)
+library(here)
+library(tidyr)
+set.seed(1289)
+```
+
+# **Box Office**
+
+## Initialisation
+
+```{r film-data}
+boxoffice <- data.frame(
+  country = c("USA", "FRA", "UK", "IT"), # pays de production
+  number = c(51, 45, 03, 01)             # nombre de films
+)
+
+boxoffice
+```
+
+## **Diagramme en bar avec `geom_col()`**
+
+### Diagramme vertical
+
+```{r vertical-ggplot, fig.height=3, fig.width=6, fig.align='center'}
+# Diagramme en bar vertical
+ggplot(boxoffice, aes(x = country, y = number)) + geom_col(fill = "blue")
+```
+
+### Diagramme horizontal
+
+```{r horizontal-ggplot, fig.height=3, fig.width=6, fig.align='center'}
+# Diagramme en bar horizontal
+ggplot(boxoffice, aes(x = number, y = country)) + geom_col(fill = "blue")
+```
+
+## Ordonnancement des facteurs
+
+```{r pays-factor-ord, fig.height=3, fig.width=6, fig.align='center'}
+# Ordonnés par nombre de films décroissants
+ggplot(boxoffice, aes(x = fct_reorder(country, -number), 
+  y = number)) + geom_col(fill = "blue")
+```
+
+## Nettoyage
+
+```{r pays-nettoyage, fig.height=4, fig.width=8, fig.align='center'}
+
+ggplot(boxoffice, aes(x = fct_reorder(country, -number), y = number)) +
+  geom_col(fill = "blue") +
+  ylab("Nombre de films") + 
+  xlab("Pays") +
+  labs(title = "Analyse des 100 films les plus populaires en France", subtitle = "Étude des pays de production ayant généré le plus d'entrées au cinéma parmis les 100 films les plus poplaires en France.")
+```
+
+# **Pingouins**
+
+## **Jeu de données et objectif**
+
+Jeu de données des pingouins de l'antarctique.
+
+```{r penguin}
+penguins_nomissing <- na.omit(penguins)
+head(penguins_nomissing)
+```
+
+**Question**: *Quelles espèces de pingouins sont présentes dans l'archipel ?*
+
+**Individu**: *un pingouin*
+
+**Population**: *tous les pingouins de l'archipel*
+
+**Échantillon**: *344 pingouins*
+
+**Variable**: *espèce*: Qualitative, nominale
+
+## **Comptages**
+
+```{r penguin-sum}
+## Nombre de pingouins Adelie
+sum(penguins_nomissing$species == "Adelie")
+## Nombre de pingouins Gentoo
+sum(penguins_nomissing$species == "Gentoo")
+## Nombre de pingouins Chinstrap
+sum(penguins_nomissing$species == "Chinstrap")
+```
+
+```{r penguin-cpt}
+## Nombre de pingouins par espèce
+t <- table(penguins_nomissing$species)
+t
+```
+
+## **Graphique "artisanal"**
+
+```{r penguin-diag, fig.height=4, fig.width=8, fig.align='center'}
+tt <- as.data.frame(t)
+colnames(tt) <- c("species", "number")
+ggplot(tt, aes(x = species, y = number)) +
+  geom_col(fill = "blue")
+```
+
+## **Diagramme en bar avec `geom_bar()`**
+
+```{r penguin-geom, fig.height=4, fig.width=8, fig.align='center'}
+ggplot(penguins_nomissing, aes(x = species)) +
+  geom_bar(fill = "blue")
+```
+
+## Nettoyage
+
+```{r penguin-geom-clean, fig.height=4, fig.width=8, fig.align='center'}
+ggplot(penguins_nomissing, aes(x = fct_relevel(species, "Chinstrap", "Gentoo", "Adelie"))) +
+  geom_bar(fill = "blue") +
+  xlab("Espèces") +
+  ylab("Nombre")
+```
+
+## Ajout d'information
+
+```{r}
+head(penguins_nomissing$sex)
+```
+
+### Position par defaut
+
+```{r fig.height=4, fig.width=8, fig.align='center'}
+ggplot(penguins_nomissing,
+       aes(y = fct_relevel(species, "Chinstrap", "Gentoo", "Adelie"),
+           fill = sex)) +
+  geom_bar() +
+  xlab("Espèces") +
+  ylab("Nombre")
+```
+
+### Position "dodge"
+
+```{r fig.height=4, fig.width=8, fig.align='center'}
+ggplot(penguins_nomissing,
+       aes(y = fct_relevel(species, "Chinstrap", "Gentoo", "Adelie"),
+           fill = sex)) +
+  geom_bar(position = "dodge") +
+  xlab("Espèces") +
+  ylab("Nombre")
+```
+
+## Nettoyage
+
+```{r fig.height=4, fig.width=8, fig.align='center'}
+ggplot(penguins_nomissing,
+       aes(y = fct_relevel(species, "Chinstrap", "Gentoo", "Adelie"),
+           fill = sex)) +
+  geom_bar(position = "dodge") +
+  xlab("Espèces") +
+  ylab("Nombre") +
+  labs(title = "Pingouins de l'Antarctique", subtitle = "Répartition par espèce et par sexe des individus")
+```
+
+# Parlements
+
+## Données
+
+Le jeu de données contient 74 colonnes et 194 lignes. Chaque ligne correspond à un pays et à une année donnée.
+Chaque colonne coorespond à une information sur la composition du parlement en fonction de chaque ligne.
+
+
+```{r warning=FALSE}
+data <- read_excel(here("data/women_in_parliament-historical_database-1945_to_2018.xlsx"), 
+    col_types = c("text", "text", "text", 
+        "numeric", "text", "text", "numeric", 
+        "numeric", "numeric", "text"))
+
+data
+```
+
+## Assemblée constituante française
+
+#### **IV^e^*République***: *27 octobre 1946*
+
+```{r, warning=FALSE }
+data_fourth_republic <- subset(data, Year==1946 & Country=="France" & NOTES=="Constitutional Assembly")
+data_fourth_republic
+```
+
+```{r}
+## Pourcentage de femmes
+percent_of_women <- data_fourth_republic$`% Of Women in Chamber` 
+cat("Le pourcentage de femmes est", percent_of_women*100, "% \n")
+```
+
+```{r}
+## Pourcentage d'hommes
+percent_of_men <- 1 - percent_of_women
+cat("Le pourcentage d'hommes est", percent_of_men*100, "% \n")
+```
+
+#### **Diagramme en barre**
+
+```{r warning=FALSE, fig.height=4, fig.width=8, fig.align='center' }
+gender_proportion_table <- data.frame(gender=c("Femmes", "Hommes"), 
+                                      percent=c(percent_of_women, percent_of_men))
+gender_proportion_table
+```
+
+### **Diagramme barres côte à côte**
+
+```{r}
+ggplot(gender_proportion_table, aes(x=gender, y=percent, fill=gender)) +
+  geom_bar(stat="identity", position=position_dodge(), width=0.5) +
+  scale_fill_manual(values=c("red", "blue")) +
+  labs(title="Proportion de genres dans l'Assemblée constituante de la Quatrième République",
+       x="Genre",
+       y="Pourcentage",
+       fill="Genre") +
+  theme_minimal() +
+  scale_y_continuous(labels=scales::percent)
+
+```
+
+Dans le cas de la représentation de la proportion de femmes dans l'assemblée constituante de la IV république française, il est plus approprié d'utiliser des barres côte à côte. Cela permet une comparaison visuelle immédiate entre les deux proportions et met en évidence la différence entre les deux.
+
+#### Diagramme en secteurs (camembert)
+
+```{r warning=FALSE, fig.height=4, fig.width=8, fig.align='center'}
+pie <- ggplot(gender_proportion_table, aes(x = "", y = percent, fill = gender)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar(theta = "y") +
+  ggtitle("Proportion de femmes/hommes dans l'assemblée constituante \nde la IV république française") +
+  theme_void() +
+  scale_fill_manual(values = c("red", "blue")) +
+  labs(fill = "Genre")
+
+pie
+
+```
+
+## Evolution de la proportion de femmes dans l'assemblée d'un pays
+
+Nous choisissions d'étudier l'évolution de la proportion de femmes dans la chambre basse du Parlement du Canada sur une période de 20 ans, de 2000 à 2020.
+
+Question:
+Comment a évolué la proportion de femmes dans la Chambre basse du Canada de 2000 à 2020 ?
+
+```{r}
+# Création d'un dataframe avec des données simulées
+data <- data.frame(
+  year = rep(2000:2020, each = 1),
+  femmes = seq(0.20, 0.42, length.out = 21),
+  hommes = seq(0.80, 0.58, length.out = 21)
+)
+
+# Vérification des données
+print(data)
+```
+
+Puis on transforme la table au format "long" :
+
+```{r}
+data_long <- pivot_longer(data, cols = c("femmes", "hommes"), names_to = "genre", values_to = "pourcent")
+
+print(data_long)
+```
+
+### Diagramme barres empillées
+
+```{r}
+ggplot(data_long, aes(x = year, y = pourcent, fill = genre)) +
+  geom_bar(stat = "identity", position = "stack") +
+  scale_fill_manual(values = c("femmes" = "red", "hommes" = "blue")) +
+  labs(title = "Proportion de femmes et d'hommes dans la Chambre basse du Canada",
+       x = "Année",
+       y = "Pourcentage",
+       fill = "Genre") +
+  theme_minimal()
+
+```
+
+### Diagramme secteurs
+
+```{r}
+ggplot(data_long, aes(x = "", y = pourcent, fill = genre)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar(theta = "y") +
+  facet_wrap(~ year) +
+  scale_fill_manual(values = c("femmes" = "red", "hommes" = "blue")) +
+  labs(title = "Proportion annuelle de femmes et d'hommes dans la Chambre basse du Canada",
+       fill = "Genre") +
+  theme_void() +
+  theme(strip.background = element_blank(), strip.text.x = element_text(size = 8))
+```
+

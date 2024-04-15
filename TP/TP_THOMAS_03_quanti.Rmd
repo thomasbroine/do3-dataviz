@@ -1,0 +1,231 @@
+---
+title: "TP 3"
+author: "Thomas Broine"
+date: "2024-04-10"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(ggforce)
+library(ggplot2)
+theme_set(theme_light())
+library(here)
+library(readr)
+library(tidyr)
+library(dplyr)
+```
+
+# Nombre d'enfants
+
+**Question**: Les couples pacsés ont-ils plus d’enfants de moins de 25 ans que les couples mariés en France en 2017 ?
+
+**Individu**: un couple
+
+**Population**: tous les couples français
+
+**Variable**: nombre d'enfants de moins de 25 ans: quantitative, discrète
+
+**Modalités**: nombres positifs
+
+```{r}
+url <- "https://www.insee.fr/fr/statistiques/tableaux/4516614/FE/1/rp2017_td_fam2.csv"
+file_path <-"../data/enfants.csv"
+download.file(url, file_path, mode = "wb")
+couples <- read_delim(file_path, 
+    delim = ";", escape_double = FALSE, 
+    col_types = cols(...8 = col_skip()), 
+    trim_ws = TRUE, skip = 6)
+
+couples <- na.omit(couples)
+colnames(couples) <- c("situation", "0 enfant", "1 enfant", "2 enfants", "3 enfants", "4 enfants ou plus", "total")
+couples$situation <- c("mariés", "pacsés", "concubinage", "autre", "total")
+
+head(couples)
+```
+
+Les données extraites de l'INSEE donnent le nombre d'enfants en fonctions de la situation conjugale des parents.
+
+## Formatage
+
+```{r}
+couples_long <- couples %>%
+  pivot_longer(
+    cols = c("0 enfant", "1 enfant", "2 enfants", "3 enfants", "4 enfants ou plus"),
+    names_to = "enfants",
+    values_to = "compte"
+  )
+
+head(couples_long)
+```
+
+## Polygone des fréquences
+
+```{r}
+couples_long$total <- as.numeric(as.character(couples_long$total)) 
+couples_long$relative_freq <- couples_long$compte / couples_long$total
+
+ggplot(couples_long, aes(x = enfants, y = relative_freq, group = situation, color = situation)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Polygone des fréquences du nombre d'enfants par situation maritale",
+       x = "Nombre d'enfants",
+       y = "Fréquence relative",
+       color = "Situation maritale") +
+  theme_minimal()
+```
+
+Cette visualisation vous permet de voir directement si les couples pacsés ont tendance à avoir plus ou moins d'enfants que les couples mariés.
+
+## Graphe simplifie
+
+Pour simplifier le graphique et se concentrer uniquement sur les informations nécessaires pour répondre à la question initiale, nous pourrions ne montrer que les polygones pour les couples mariés et pacsés.
+
+```{r}
+couples_focus <- couples_long %>%
+  filter(situation %in% c("mariés", "pacsés"))
+
+couples_focus$total <- as.numeric(as.character(couples_focus$total)) 
+couples_focus$relative_freq <- couples_focus$compte / couples_focus$total
+
+ggplot(couples_focus, aes(x = enfants, y = relative_freq, group = situation, color = situation)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Comparaison du nombre d'enfants chez les couples mariés et pacsés",
+       x = "Nombre d'enfants",
+       y = "Fréquence relative",
+       color = "Type de couple") +
+  theme_minimal() +
+  scale_color_manual(values = c("mariés" = "blue", "pacsés" = "red"))
+```
+
+## Autre question
+
+Question : Quelle est la proportion de couples sans enfant comparativement entre les couples mariés et les couples pacsés ?
+
+```{r}
+couples_sans_enfants <- couples_focus %>%
+  filter(enfants == "0 enfant") %>%
+  mutate(proportion = compte / total)
+
+ggplot(couples_sans_enfants, aes(x = situation, y = proportion, fill = situation)) +
+  geom_col(show.legend = FALSE) +
+  labs(title = "Proportion de couples sans enfants parmi les mariés et les pacsés",
+       x = "Type de couple",
+       y = "Proportion sans enfants") +
+  theme_minimal() +
+  scale_fill_manual(values = c("mariés" = "blue", "pacsés" = "red"))
+
+```
+
+# Expéditions sur l’Everest
+
+```{r}
+members <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-09-22/members.csv')
+```
+
+Le jeu de données `members` contient des informations sur les membres des expéditions vers le Mont Everest.
+
+## Age des membres d’une expédition réussie
+
+**Question :** "Comment se répartit l'âge des membres d'une expédition réussie vers le Mont Everest ?"
+
+**Individu**: Membre de l'expédition.
+
+**Population**: Tous les membres des expéditions vers le Mont Everest.
+
+**Échantillon**: Membres des expéditions réussies où l'âge est renseigné.
+
+**Variable**: Âge des membres.
+
+**Modalité**: Un nombre postif
+
+### Sélection des données :
+
+```{r}
+data_success <- members %>%
+  filter(success == TRUE, !is.na(age))
+```
+
+### Histogramme :
+
+```{r}
+ggplot(data_success, aes(x = age)) +
+  geom_histogram(binwidth = 5) +
+  ggtitle("Histogramme des âges pour les expéditions réussies")
+```
+
+### Justification du choix de la largeur des classes :
+
+La largeur de 5 ans aide à équilibrer la granularité et la lisibilité de la distribution.
+
+```{r}
+ggplot(data_success, aes(x = "", y = age)) +
+  geom_boxplot() +
+  ggtitle("Boxplot de l'âge pour les expéditions réussies")
+```
+
+Le boxplot offre une visualisation concise des données (médiane, quartiles, extrêmes), tandis que l'histogramme montre la distribution de manière plus détaillée.
+
+L'âge médian, la dispersion et les possibles outliers sont plus facilement identifiables dans le boxplot.
+
+## Age en fonction des années d’ascension
+
+```{r}
+ggplot(data_success, aes(x = factor(year), y = age)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  ggtitle("Boxplots de l'âge par année d'ascension")
+```
+
+## Age des membres d’une expédition réussie ou non
+
+**Question :** "Y-a-t-il une différence d'âge entre les membres d'une expédition réussie, et ceux d'une expédition qui a échoué, avec ou sans oxygène ?"
+
+**Individus :** Les membres des expéditions vers le Mont Everest qui ont été recensées
+
+**Population :** L'ensemble des membres des expéditions vers le Mont Everest
+
+**Échantillon :** Les membres des expéditions réussies et échouées du Mont Everest, avec et sans oxygène, pour lesquels l'âge est connu.
+
+**Variables :** âge des membres:quantitative discrète
+
+**Modalités :** un nombre positif
+
+```{r}
+expeditions_age <- members %>%
+  filter(!is.na(age))
+
+ggplot(expeditions_age, aes(x = as.factor(oxygen_used), y = age, fill = as.factor(success))) +
+  geom_boxplot() +
+  facet_wrap(~ success, scales = "free", labeller = as_labeller(c(`TRUE` = "Succès", `FALSE` = "Échec"))) +
+  labs(title = "Répartition de l'âge des membres selon le succès de l'expédition et l'utilisation d'oxygène",
+       x = "Utilisation d'oxygène",
+       y = "Âge") +
+  scale_x_discrete(labels = c(`TRUE` = "Avec Oxygène", `FALSE` = "Sans Oxygène")) +
+  scale_fill_discrete(name = "Résultat de l'expédition", labels = c(`TRUE` = "Succès", `FALSE` = "Échec")) +
+  theme_minimal()
+
+```
+
+Y-a-t-il une différence dans la distribution des âges ?
+
+La différence dans la distribution des âges est plus évidente entre les expéditions réussies et échouées qu'entre les expéditions avec ou sans oxygène. Les membres des expéditions réussies semblent être légèrement plus jeunes que ceux des expéditions échouées, mais il y a une grande variabilité dans les deux groupes. L'utilisation d'oxygène ne semble pas avoir un impact significatif sur la distribution des âges.
+
+### Graphes "en violons"
+
+```{r}
+ggplot(expeditions_age, aes(x = as.factor(oxygen_used), y = age, fill = as.factor(success))) +
+  geom_violin() +
+  facet_wrap(~ success, scales = "free", labeller = as_labeller(c(`TRUE` = "Succès", `FALSE` = "Échec"))) +
+  labs(title = "Distribution de l'âge des membres selon le succès de l'expédition et l'utilisation d'oxygène",
+       x = "Utilisation d'oxygène",
+       y = "Âge") +
+  scale_x_discrete(labels = c(`TRUE` = "Avec Oxygène", `FALSE` = "Sans Oxygène")) +
+  scale_fill_discrete(name = "Résultat de l'expédition", labels = c(`TRUE` = "Succès", `FALSE` = "Échec")) +
+  theme_minimal()
+```
+
+Les violons peuvent montrer s'il y a une concentration d'âges à certaines valeurs ou si la distribution est plus uniforme.
+
+Au final, le choix entre un boxplot et un graphique en violon dépend de ce qu'on souhaite mettre en évidence. Si on est intéressé par les résumés statistiques simples, un boxplot suffit. Si on veut comprendre la distribution elle-même, le graphique en violon est plus informatif.
+
