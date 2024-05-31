@@ -1,0 +1,94 @@
+---
+title: "TP_THOMAS_04_shiny"
+author: "Thomas Broine"
+date: "2024-04-30"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+library(palmerpenguins)
+library(shiny)
+library(ggplot2)
+```
+
+# Pingouins d’Antarctique
+
+```{r}
+penguins <- na.omit(penguins)
+knitr::kable(head(penguins))
+```
+
+# Longeur des ailes
+
+Expérience statistique:
+
+**Question**: “Les différentes espèces de pingouins ont-elles des ailes de longueur différente ?”
+
+**Individu**: un pingouin
+
+**Population**: les pingouins de l'archipel Palmer
+
+**Variable**: longueur des ailes: quantitative, discrète
+
+**Modalités**: nombre positif
+    
+## Histogrammes
+
+Pour répondre visuellement à la question, un histogramme de la longueur des ailes par espèce de pingouin peut être tracé en utilisant ggplot2 :
+  
+```{r}
+ggplot(penguins, aes(x = flipper_length_mm, fill = species)) +
+  geom_histogram(position = "identity", alpha = 0.6, binwidth = 5) +
+  theme_minimal() +
+  labs(title = "Distribution de la longueur des ailes par espèce", x = "Longueur des ailes (mm)", y = "Nombre")
+```
+
+Justification des choix :
+- binwidth = 5 : Taille de classe suffisamment petite pour voir les détails tout en évitant trop de bruit.
+- position = "identity" et alpha = 0.5 : Permet de superposer les histogrammes en les rendant semi-transparents pour faciliter la comparaison.
+
+## Boxplots
+
+```{r}
+ggplot(penguins, aes(x = species, y = flipper_length_mm, color = species)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Boxplot de la longueur des ailes par espèce", x = "Espèce", y = "Longueur des ailes (mm)")
+```
+
+Ce graphique montre clairement les médianes, quartiles et valeurs aberrantes, facilitant la comparaison des distributions entre les espèces.
+
+## Inclusion de l'information du sexe :
+
+Le boxplot permet d'intégrer facilement l'information du sexe :
+
+```{r}
+ggplot(penguins, aes(x = species, y = flipper_length_mm, fill = sex)) +
+  geom_boxplot() +
+  facet_wrap(~sex) +
+  theme_minimal() +
+  labs(title = "Boxplot de la longueur des ailes par espèce et sexe", x = "Espèce", y = "Longueur des ailes (mm)")
+
+```
+
+# Dimensions du bec
+
+Pour la relation entre la longueur et la largeur du bec :
+
+```{r}
+ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(title = "Relation entre la longueur et la largeur du bec", x = "Longueur du bec (mm)", y = "Largeur du bec (mm)")
+
+```
+
+Pour différencier par espèce :
+
+```{r}
+ggplot(penguins, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Relation entre la longueur et la largeur du bec par espèce", x = "Longueur du bec (mm)", y = "Largeur du bec (mm)")
+
+```
